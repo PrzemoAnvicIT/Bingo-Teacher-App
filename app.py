@@ -1,9 +1,8 @@
 import tkinter as tk
 from tkinter import ttk
+import tkinter.font as tkfont
 import random
 from ttkthemes import ThemedTk  # You may need to install ttkthemes
-import time
-
 # Your verbs data
 verbs = [
     {'base': 'be', 'past_simple': 'was/were', 'past_participle': 'been'},
@@ -76,18 +75,38 @@ verbs = [
     {'base': 'write', 'past_simple': 'wrote', 'past_participle': 'written'}
 ]
 
+
 class BingoApp:
     def __init__(self, root):
         self.root = root
         self.root.title("Irregular Verbs Bingo")
-        self.root.geometry("800x700")
-        
+
+        # Adjust scaling for high DPI displays
+        self.scaling_factor = self.root.winfo_fpixels('1i') / 96  # 96 DPI is standard
+        self.root.tk.call('tk', 'scaling', self.scaling_factor)
+
+        # Set minimum window size and allow resizing
+        base_width = 800
+        base_height = 700
+        self.root.minsize(int(base_width * self.scaling_factor), int(base_height * self.scaling_factor))
+
+        # Adjust default font sizes
+        default_font = tkfont.nametofont("TkDefaultFont")
+        default_font.configure(size=int(default_font.cget("size") * self.scaling_factor))
+
         # Apply theme
         self.style = ttk.Style()
         self.style.theme_use('clam')  # You can choose other themes like 'arc', 'radiance', etc.
 
+        # Set fonts for different elements
+        self.header_font = tkfont.Font(family="Helvetica", size=int(24 * self.scaling_factor), weight="bold")
+        self.word_font = tkfont.Font(family="Helvetica", size=int(32 * self.scaling_factor), weight="bold")
+        self.label_font = tkfont.Font(family="Helvetica", size=int(18 * self.scaling_factor))
+        self.listbox_font = tkfont.Font(family="Helvetica", size=int(22 * self.scaling_factor))
+        self.timer_font = tkfont.Font(family="DS-Digital", size=int(48 * self.scaling_factor))
+
         self.selected_form = tk.StringVar()
-        self.timer_seconds = tk.IntVar(value=15)  # Default timer value
+        self.timer_seconds = tk.IntVar(value=30)  # Default timer value
 
         # Initialize lists
         self.available_words = []
@@ -100,84 +119,92 @@ class BingoApp:
         self.create_widgets()
 
     def create_widgets(self):
+        # Create styles
+        self.style.configure('Header.TLabel', font=self.header_font)
+        self.style.configure('Label.TLabel', font=self.label_font)
+        self.style.configure('Timer.TLabel', font=self.timer_font)
+        self.style.configure('TButton', font=self.label_font)
+        self.style.configure('TEntry', font=self.label_font)
+        self.style.configure('TRadiobutton', font=self.label_font)
+        self.style.configure('TLabelFrame', font=self.label_font)
+
         # Header Frame
         header_frame = ttk.Frame(self.root)
-        header_frame.pack(pady=10)
-
-        header_label = ttk.Label(header_frame, text="Irregular Verbs Bingo", font=("Helvetica", 24, 'bold'))
+        header_frame.pack(pady=int(10 * self.scaling_factor))
+        header_label = ttk.Label(header_frame, text="Irregular Verbs Bingo", style='Header.TLabel')
         header_label.pack()
 
         # Form selection frame
         form_frame = ttk.LabelFrame(self.root, text="Select Verb Form")
-        form_frame.pack(pady=10, padx=20, fill="x")
-
+        form_frame.pack(pady=int(10 * self.scaling_factor), padx=int(20 * self.scaling_factor), fill="x")
         forms = [("Base Form", "base"), ("Past Simple", "past_simple"), ("Past Participle", "past_participle")]
         for text, value in forms:
             rb = ttk.Radiobutton(form_frame, text=text, variable=self.selected_form, value=value)
-            rb.pack(side=tk.LEFT, padx=10, pady=5)
+            rb.pack(side=tk.LEFT, padx=int(10 * self.scaling_factor), pady=int(5 * self.scaling_factor))
 
         # Start button
         start_button = ttk.Button(self.root, text="Start Game", command=self.start_game)
-        start_button.pack(pady=10)
+        start_button.pack(pady=int(10 * self.scaling_factor))
 
         # Last drawn word display
-        self.last_word_label = ttk.Label(self.root, text="", font=("Helvetica", 32, 'bold'), foreground="blue")
-        self.last_word_label.pack(pady=10)
+        self.last_word_label = tk.Label(self.root, text="", font=self.word_font, fg="blue")
+        self.last_word_label.pack(pady=int(10 * self.scaling_factor))
 
         # Main frame
         main_frame = ttk.Frame(self.root)
-        main_frame.pack(pady=10, padx=20, fill="both", expand=True)
+        main_frame.pack(pady=int(10 * self.scaling_factor), padx=int(20 * self.scaling_factor), fill="both", expand=True)
 
         # Left column - Available words
         left_frame = ttk.Frame(main_frame)
-        left_frame.pack(side=tk.LEFT, fill="both", expand=True, padx=10)
+        left_frame.pack(side=tk.LEFT, fill="both", expand=True, padx=int(10 * self.scaling_factor))
 
-        left_label = ttk.Label(left_frame, text="Available Words", font=("Helvetica", 14))
-        left_label.pack(pady=5)
+        left_label = ttk.Label(left_frame, text="Available Words")
+        left_label.pack(pady=int(5 * self.scaling_factor))
 
-        self.available_listbox = tk.Listbox(left_frame, width=30, height=15, font=("Helvetica", 12))
+        self.available_listbox = tk.Listbox(left_frame, font=self.listbox_font)
         self.available_listbox.pack(fill="both", expand=True)
 
         # Middle frame for buttons
         middle_frame = ttk.Frame(main_frame)
-        middle_frame.pack(side=tk.LEFT, fill="y", pady=20)
+        middle_frame.pack(side=tk.LEFT, fill="y", pady=int(20 * self.scaling_factor))
 
         # Draw word button
         self.draw_button = ttk.Button(middle_frame, text="Draw Word ▶", command=self.draw_word, state=tk.DISABLED)
-        self.draw_button.pack(pady=5)
+        self.draw_button.pack(pady=int(5 * self.scaling_factor))
 
         # Right column - Used words
         right_frame = ttk.Frame(main_frame)
-        right_frame.pack(side=tk.LEFT, fill="both", expand=True, padx=10)
+        right_frame.pack(side=tk.LEFT, fill="both", expand=True, padx=int(10 * self.scaling_factor))
 
-        right_label = ttk.Label(right_frame, text="Used Words", font=("Helvetica", 14))
-        right_label.pack(pady=5)
+        right_label = ttk.Label(right_frame, text="Used Words")
+        right_label.pack(pady=int(5 * self.scaling_factor))
 
-        self.used_listbox = tk.Listbox(right_frame, width=30, height=15, font=("Helvetica", 12))
+        self.used_listbox = tk.Listbox(right_frame, font=self.listbox_font)
         self.used_listbox.pack(fill="both", expand=True)
 
         # Control frame
         control_frame = ttk.LabelFrame(self.root, text="Timer Controls")
-        control_frame.pack(pady=10, padx=20, fill="x")
+        control_frame.pack(pady=int(10 * self.scaling_factor), padx=int(20 * self.scaling_factor), fill="x")
 
         # Timer controls
         timer_subframe = ttk.Frame(control_frame)
-        timer_subframe.pack(pady=5)
+        timer_subframe.pack(pady=int(5 * self.scaling_factor))
 
         ttk.Label(timer_subframe, text="Timer (seconds):").pack(side=tk.LEFT)
         self.timer_entry = ttk.Entry(timer_subframe, textvariable=self.timer_seconds, width=5)
-        self.timer_entry.pack(side=tk.LEFT, padx=5)
+        self.timer_entry.pack(side=tk.LEFT, padx=int(5 * self.scaling_factor))
         self.start_timer_button = ttk.Button(timer_subframe, text="Start Timer", command=self.start_timer)
-        self.start_timer_button.pack(side=tk.LEFT, padx=5)
+        self.start_timer_button.pack(side=tk.LEFT, padx=int(5 * self.scaling_factor))
         self.stop_timer_button = ttk.Button(timer_subframe, text="Stop Timer", command=self.stop_timer)
-        self.stop_timer_button.pack(side=tk.LEFT, padx=5)
+        self.stop_timer_button.pack(side=tk.LEFT, padx=int(5 * self.scaling_factor))
         self.reset_timer_button = ttk.Button(timer_subframe, text="Reset Timer", command=self.reset_timer)
-        self.reset_timer_button.pack(side=tk.LEFT, padx=5)
+        self.reset_timer_button.pack(side=tk.LEFT, padx=int(5 * self.scaling_factor))
 
         # Stopwatch display
-        self.timer_label = ttk.Label(control_frame, text="00:00", font=("DS-Digital", 48), foreground="green")
-        self.timer_label.pack(pady=10)
+        self.timer_label = tk.Label(control_frame, text="00:00", font=self.timer_font, fg="green")
+        self.timer_label.pack(pady=int(10 * self.scaling_factor))
 
+    # Rest of the class methods remain the same
     def start_game(self):
         form = self.selected_form.get()
         if form not in ['base', 'past_simple', 'past_participle']:
@@ -219,12 +246,9 @@ class BingoApp:
         self.used_words.append(word)
         self.update_available_listbox()
         self.update_used_listbox()
-        self.reset_timer()
+
         # Update the last drawn word display
         self.last_word_label.config(text=word.capitalize())
-
-        # Optionally, announce the drawn word
-        # tk.messagebox.showinfo("Drawn Word", f"The next word is: {word}")
 
     def start_timer(self):
         if self.timer_running:
@@ -243,7 +267,7 @@ class BingoApp:
     def reset_timer(self):
         self.stop_timer()
         self.update_timer_label(0)
-        self.timer_label.config(foreground="green")
+        self.timer_label.config(fg="green")
 
     def countdown(self):
         if self.timer_running and self.timer_countdown > 0:
@@ -253,7 +277,7 @@ class BingoApp:
         elif self.timer_running and self.timer_countdown == 0:
             self.update_timer_label(0)
             self.timer_running = False
-            self.timer_label.config(foreground="red")
+            self.timer_label.config(fg="red")
             tk.messagebox.showinfo("Timer", "Time's up!")
 
     def update_timer_label(self, seconds):
@@ -264,11 +288,12 @@ class BingoApp:
 
         # Change color based on time left
         if seconds > 10:
-            self.timer_label.config(foreground="green")
+            self.timer_label.config(fg="green")
         elif 5 < seconds <= 10:
-            self.timer_label.config(foreground="orange")
+            self.timer_label.config(fg="orange")
         else:
-            self.timer_label.config(foreground="red")
+            self.timer_label.config(fg="red")
+
 
 if __name__ == "__main__":
     # Use ThemedTk for better appearance
