@@ -3,6 +3,9 @@ from tkinter import ttk
 import tkinter.font as tkfont
 import random
 from ttkthemes import ThemedTk  # You may need to install ttkthemes
+import datetime  # Import datetime module for timestamp
+from tkinter import messagebox  # Import messagebox module
+
 # Your verbs data
 verbs = [
     {'base': 'be', 'past_simple': 'was/were', 'past_participle': 'been'},
@@ -75,7 +78,6 @@ verbs = [
     {'base': 'write', 'past_simple': 'wrote', 'past_participle': 'written'}
 ]
 
-
 class BingoApp:
     def __init__(self, root):
         self.root = root
@@ -103,10 +105,10 @@ class BingoApp:
         self.word_font = tkfont.Font(family="Helvetica", size=int(32 * self.scaling_factor), weight="bold")
         self.label_font = tkfont.Font(family="Helvetica", size=int(18 * self.scaling_factor))
         self.listbox_font = tkfont.Font(family="Helvetica", size=int(22 * self.scaling_factor))
-        self.timer_font = tkfont.Font(family="DS-Digital", size=int(48 * self.scaling_factor))
+        self.timer_font = tkfont.Font(family="DS-Digital", size=int(36 * self.scaling_factor))
 
         self.selected_form = tk.StringVar()
-        self.timer_seconds = tk.IntVar(value=30)  # Default timer value
+        self.timer_seconds = tk.IntVar(value=15)  # Default timer value
 
         # Initialize lists
         self.available_words = []
@@ -142,9 +144,17 @@ class BingoApp:
             rb = ttk.Radiobutton(form_frame, text=text, variable=self.selected_form, value=value)
             rb.pack(side=tk.LEFT, padx=int(10 * self.scaling_factor), pady=int(5 * self.scaling_factor))
 
+        # Button frame
+        button_frame = ttk.Frame(self.root)
+        button_frame.pack(pady=int(10 * self.scaling_factor))
+
         # Start button
-        start_button = ttk.Button(self.root, text="Start Game", command=self.start_game)
-        start_button.pack(pady=int(10 * self.scaling_factor))
+        start_button = ttk.Button(button_frame, text="Start Game", command=self.start_game)
+        start_button.pack(side=tk.LEFT, padx=int(5 * self.scaling_factor))
+
+        # Finished button
+        finished_button = ttk.Button(button_frame, text="Finished", command=self.save_results)
+        finished_button.pack(side=tk.LEFT, padx=int(5 * self.scaling_factor))
 
         # Last drawn word display
         self.last_word_label = tk.Label(self.root, text="", font=self.word_font, fg="blue")
@@ -208,7 +218,7 @@ class BingoApp:
     def start_game(self):
         form = self.selected_form.get()
         if form not in ['base', 'past_simple', 'past_participle']:
-            tk.messagebox.showerror("Error", "Please select a verb form.")
+            messagebox.showerror("Error", "Please select a verb form.")
             return
 
         # Reset lists
@@ -240,7 +250,7 @@ class BingoApp:
 
     def draw_word(self):
         if not self.available_words:
-            tk.messagebox.showinfo("Info", "No more words to draw.")
+            messagebox.showinfo("Info", "No more words to draw.")
             return
         word = self.available_words.pop(0)
         self.used_words.append(word)
@@ -256,7 +266,7 @@ class BingoApp:
         try:
             self.timer_countdown = int(self.timer_entry.get())
         except ValueError:
-            tk.messagebox.showerror("Error", "Please enter a valid number of seconds.")
+            messagebox.showerror("Error", "Please enter a valid number of seconds.")
             return
         self.timer_running = True
         self.countdown()
@@ -278,7 +288,7 @@ class BingoApp:
             self.update_timer_label(0)
             self.timer_running = False
             self.timer_label.config(fg="red")
-            tk.messagebox.showinfo("Timer", "Time's up!")
+            messagebox.showinfo("Timer", "Time's up!")
 
     def update_timer_label(self, seconds):
         mins = seconds // 60
@@ -294,9 +304,45 @@ class BingoApp:
         else:
             self.timer_label.config(fg="red")
 
+    # New method to save results
+    def save_results(self):
+        if not self.used_words:
+            messagebox.showinfo("Info", "No words have been drawn yet.")
+            return
+
+        # Get the game mode
+        form = self.selected_form.get()
+        if form == 'base':
+            form_name = 'Base_Form'
+        elif form == 'past_simple':
+            form_name = 'Past_Simple'
+        elif form == 'past_participle':
+            form_name = 'Past_Participle'
+        else:
+            form_name = 'Unknown_Form'
+
+        # Get current date and time
+        now = datetime.datetime.now()
+        timestamp = now.strftime('%Y%m%d_%H%M%S')
+
+        # Create filename
+        filename = f"BingoResults_{form_name}_{timestamp}.txt"
+
+        # Write to file
+        try:
+            with open(filename, 'w') as f:
+                f.write(f"Bingo Game Results\n")
+                f.write(f"Game Mode: {form_name}\n")
+                f.write(f"Date and Time: {now.strftime('%Y-%m-%d %H:%M:%S')}\n\n")
+                f.write("Drawn Words:\n")
+                for index, word in enumerate(self.used_words, start=1):
+                    f.write(f"{index}. {word}\n")
+            messagebox.showinfo("Results Saved", f"Results have been saved to {filename}")
+        except Exception as e:
+            messagebox.showerror("Error", f"An error occurred while saving the results:\n{e}")
 
 if __name__ == "__main__":
     # Use ThemedTk for better appearance
-    root = ThemedTk(theme="arc")  # You can choose different themes like 'breeze', 'elegance', etc.
+    root = ThemedTk(theme="ubuntu")  # You can choose different themes like 'breeze', 'elegance', etc.
     app = BingoApp(root)
     root.mainloop()
